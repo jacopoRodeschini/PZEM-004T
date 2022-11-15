@@ -1,7 +1,11 @@
-# PZEM-004T (v3.0) Mycrophyton library 
-> Some protocol issues
+# PZEM-004T (v3.0) Mycrophyton library  
+> Tested for ESP8266 
 
 ## How in works 
 
 
-## How set addrasser
+## How to load file in the ESP
+
+
+
+
