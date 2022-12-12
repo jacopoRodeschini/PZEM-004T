@@ -25,13 +25,14 @@
 # main.py file
 
 from pzem import PZEM
-from machine import UART, time
+import machine
+import time
 
-# define spleeping time [sec.]
+# define spleeping time [msec.]
 sleep = 60
 
 # define hardware uart
-uart = machine.UART(1, baudrate=9600, timeout=500)
+uart = machine.UART(2, baudrate=9600)
 
 # define PZEM device [UART, ADDR = 0xF8 (default)]
 dev = PZEM(uart=uart)
