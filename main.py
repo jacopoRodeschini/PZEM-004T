@@ -28,8 +28,8 @@ from pzem import PZEM
 import machine
 import time
 
-# define spleeping time [msec.]
-sleep = 60
+# define 60 sec spleeping time [msec.]
+sleep = 60 * 1000 
 
 # define hardware uart
 uart = machine.UART(2, baudrate=9600)
@@ -52,4 +52,4 @@ while True:
         print(dev.getCurrent())
 
     # wait for the next reading
-    time.sleep(sleep - dev.getReadingTime())
+    time.sleep_ms(sleep - dev.getReadingTime())
