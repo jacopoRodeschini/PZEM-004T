@@ -195,7 +195,7 @@ $ cd PZEM-004T
 **Upload file**
 ```bash
 $ ampy --port /dev/ttyUSB0 mkdir lib
-$ ampy --port /dev/ttyUSB0 put /lib/pzem.py
+$ ampy --port /dev/ttyUSB0 put pzem.py /lib/pzem.py
 $ ampy --port /dev/ttyUSB0 put main.py
 $ ampy --port /dev/ttyUSB0 reset 
 ``` 
