@@ -28,9 +28,9 @@ The PZEM object is very simple and includes all methods useful to read the smart
  - Reading method (e.g. readAddress() or read()): are use to read the value save in the pzed device.  
 
  - The device neet to be connected with load source power, and with DC power necessary to communicate using UART port.
-**Setting up the PZEM device**  
 
-> By default, the address used for communication with the PZEM device is 0xF8 which is used as the general address. This address can be only used in a single-slave environment. If you know the address of the device you can specify the address by replacing the addr=0xF8.  
+### Setting up the PZEM device  
+By default, the address used for communication with the PZEM device is 0xF8 which is used as the general address. This address can be only used in a single-slave environment. If you know the address of the device you can specify the address by replacing the addr=0xF8.  
 When you call the **dev = PZEM(...)** the constructor search (using the address _addr_) the device in the network by reading the device address. In this way, if you are in a single-device environment you have the access to a specific device address
 
 
@@ -71,14 +71,13 @@ def write(frame):
 
 ```
 
-**Reading the active energy (every 60 seconds)**  
-
-> Before getting the value from the device is necessary to read the value from the sensor. So use the read() function. This function returns true only if the sensor values are correctly updated.
+### Reading the active energy (every 60 seconds)  
+Before getting the value from the device is necessary to read the value from the sensor. So use the read() function. This function returns true only if the sensor values are correctly updated.
 
 ```py
 ...
-# define spleeping time [sec.]
-sleep = 60 
+# define 60 sec spleeping time [sec.]
+sleep = 60 * 1000
 
 while(True):
 
@@ -90,15 +89,12 @@ while(True):
     print(dev.getCurrent())
     print(dev.getActivePower())
 
-  ...
-
-  # wait for the next reading
-  machine.time.sleep(sleep - dev.getReadingTime())
+    # wait for the next reading
+    machine.time.sleep_ms(sleep - dev.getReadingTime())
 ```
 
-**Change the device address**  
-
-> If you want to assign a specific address to a generic device, this can be done device by device (also using the RELP) using the general address 0xF8. Be careful not to use the same address for two different devices in the same sensor network.
+### Change the device address
+If you want to assign a specific address to a generic device, this can be done device by device (also using the RELP) using the general address 0xF8. Be careful not to use the same address for two different devices in the same sensor network.
 
 ```py
 ...
@@ -142,8 +138,8 @@ if(dev.setAddress(0x05)):
 ...
 ```
 
-**Set power allarm threshold**
-> The power alarm threshold is used to check whether the active power has exceeded the set threshold. This is really useful because it could be used to check the peak even when you are not measuring the values (eg if sampling every minute, with this method you can check some peak inside the minute).
+### Set power allarm threshold
+The power alarm threshold is used to check whether the active power has exceeded the set threshold. This is really useful because it could be used to check the peak even when you are not measuring the values (eg if sampling every minute, with this method you can check some peak inside the minute).
 
 ```py
 ...
@@ -173,8 +169,8 @@ if(dev.read())
 ...
 ```
 
-**Reset the active energy**
-> This method is useful to reset the energy count (Wh)
+### Reset the active energy
+This method is useful to reset the energy count (Wh)
 
 ```py
 ...
