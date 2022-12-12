@@ -10,7 +10,7 @@ Another important consideration is the voltage level used by the UART channel. P
 This module works in python, if you need to flash the ESP8266 device with the micropython firmware, a simple step-by-step guide is available at this [repo](https://github.com/jacopoRodeschini/MicroPython-ESP8266) *(10 min reading)*.
 
 ## Features
----
+
 - [x] Tested for ESP8266, ESP32 
 - [x] Reading the values of voltage, current, active power, active energy, power factor, frequency
 - [x] Reset the active energy count.
