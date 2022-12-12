@@ -16,10 +16,10 @@ This module works in python, if you need to flash the ESP8266 device with the mi
 - [x] Reset the active energy count.
 - [x] The setting of the active power threshold.
 - [x] The cyclic redundancy check (CRC) is performed every times. 
-- [] Calibration 
+- [ ] Calibration 
 
 ## Example 
----
+
 The PZEM object is very simple and includes all methods useful to read the smart meters values. For complete documentation see the methods defined in the PZEM class. The main functions can be summarised in the following examples:  
 
 **Remark** 
@@ -187,7 +187,7 @@ if(dev.resetEnergy() and dev.read())
 ```
 
 ## How to upload file in the ESP8266  
----
+
 To use the PZEM class is necessary to upload the pzem.py file under the /lib folder. This can be done using the [ampy](https://www.digikey.com/en/maker/projects/micropython-basics-load-files-run-code/fb1fcedaf11e4547943abfdd8ad825ce) tool.  
 
 **Download the file**
