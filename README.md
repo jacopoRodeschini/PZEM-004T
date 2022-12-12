@@ -1,9 +1,6 @@
 # PZEM-004T (v3.0) Microphyton module  
 > Micropython module for the PZEM-004T(v3.0) energy meter 
 
-![GitHub issues](https://img.shields.io/github/issues/jacopoRodeschini/PZEM-004T)
-![GitHub](https://img.shields.io/github/license/jacopoRodeschini/PZEM-004T)
-
 The PZEM library aims to handle the PZEM-004T (v3.0) energy meter. In particular, read energy values and manage addressing problems. This library is written in micropython to be fully compatible with ESP devices. It communicates using a TTL interface over a Modbus-RTU communication protocol and implements the CRC16 checksum. Pay attention that this library works only with the 3.0 version of the PZEM-004T because the old versions use different communication protocols.   
 Another important consideration is the voltage level used by the UART channel. PZEM devices only support 5v voltage levels on TX and RX channels. If you use a 3.3v device (like ESP8266) you can upgrade your device to support a 3.3v voltage level with a simple trick, by replacing single resistor(good documentation can be found at the following link, [hardware connections](https://tasmota.github.io/docs/PZEM-0XX/). For easy implementation, a basic example of the PZEM class is provided in the main.py file (details on this example are explained below). Other examples can be done starting from the basic one. 
 
