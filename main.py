@@ -38,8 +38,8 @@ uart = machine.UART(2, baudrate=9600)
 dev = PZEM(uart=uart)
 
 # Set new address
-if dev.setAddr(0x05):
-    print("New device address is {}".format(dev.getAddr()))
+if dev.setAddress(0x05):
+    print("New device address is {}".format(dev.getAddress()))
 
 
 while True:
