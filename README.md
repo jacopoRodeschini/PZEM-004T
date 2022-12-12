@@ -179,7 +179,7 @@ if(dev.resetEnergy() and dev.read())
 ...
 ```
 
-## How to upload file in the ESP8266  
+## How to upload file in the ESP8266 and ESP32
 
 To use the PZEM class is necessary to upload the pzem.py file under the /lib folder. This can be done using the [ampy](https://www.digikey.com/en/maker/projects/micropython-basics-load-files-run-code/fb1fcedaf11e4547943abfdd8ad825ce) tool.  
 
