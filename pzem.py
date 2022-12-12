@@ -19,15 +19,13 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
+# You should have receivedd a copy of the GNU General Public License
 # along with PZEM. If not, see <http://www.gnu.org/licenses/>.
 
 # pzem.py file
 
-import time
-
 import ustruct as struct
-from machine import UART, time
+import time
 
 
 class PZEM:
@@ -40,11 +38,6 @@ class PZEM:
     CMD_RIR = 0x04  # READ INPUT REGISTRY
     CMD_WSR = 0x06  # WRITE SINGLE REGISTRY
 
-    ADRR_LIM = 0x0A  # Limit upper register [Note 0x0a is represented as \n in a standard Python]
-
-    # Defualt Modbus-16 CRC generator (Table is at the end of the file)
-    INITIAL_MODBUS = 0xFFFF
-
     # Reading values
     Voltage = 0
     Current = 0
@@ -53,6 +46,7 @@ class PZEM:
     Frequency = 0
     PowerFactor = 0
     Allarms = 0
+    threshold = 0
 
     # Info value [debug, timing]
     frame = None
@@ -62,15 +56,31 @@ class PZEM:
     readingTime = 0  # Reading & writing time in [ms]
 
     def __init__(self, uart, addr=0xF8):
-        """Costruttore della classe. It's only require the UART connecton (This depent on yout device)
+        """Create a PZEM class object. It's only require the UART connecton
+        (this could depent on your device). The default address 0xF8 is used
+        as the general address, this address can be only used in single-slave
+        environment and can be used for calibration etc.operation.
+        Below some remark:
 
+        1) If you know the specifc address of the device it's possible replace
+            the default address with the specific one;
+        2) If you are working in multi-device setting, it is mandatory to
+            provide the specific address of the device;
+        3) It is possible set the single device address device by device
+            and than create a sensor network;
+        4) If you use 0xF8 address in the multi-device setting you will get
+            an error.
 
         Args:
             uart (UART) : uart object to communucate with PZEM device
-            addr (int)  : ModBus-RTU address of the device
+            addr (int)  : ModBus-RTU address of the device. The address 0xF8
+                        is used as the general address, this address can be
+                        only used in single-slave environment and can be used
+                        for calibration etc. operation.
 
         Exception:
-            Address       issues(Code 0x01): The address must be between 0x01 to 0x0F7 (default broadcast address 0xF8). See doc.
+            Address issues(Code 0x01): The address must be between 0x01
+                        ~ 0x0F7 (default broadcast address 0xF8). See doc.
             Communication issues(Code 0x02): No device found. See doc.
         """
 
@@ -83,178 +93,375 @@ class PZEM:
             self.addr = addr
         else:
             raise Exception(
-                "(Code: {}) The address must be between 0x01 to 0x0F8. See doc.".format(
+                "(Code: {}) The address must be between 0x01 to 0x0F8. \
+                    See doc.".format(
                     0x01
                 )
             )
 
-        # Check the connection with the device
-        if self.checkConnection():
+        # Check the connection by reading the address and update
+        # the default address
+        if self.readAddress():
             self.status = True
         else:
-            raise Exception("(Code: {}) No device found. See doc.".format(0x02))
+            raise Exception(
+                "(Code: {}) No device found. \
+                See doc.".format(
+                    0x02
+                )
+            )
 
     def checkAddr(self, addr):
-        return not (addr > 0xF8 | addr == 0x00)
-
-    def checkConnection(self):
-        # TODO: check the connection
-        return True
-
-    def getAddr(self):
-        return self.addr
-
-    def setAddr(self, addr):
         """
-        Set the device protocol address [0x01 ~ 0xF8].
-        PZEM Modbus-RTU address holding registry: 0x0002
+        Check the address validity. The address range of the slave is
+        0x01 ~ 0xF7. The address 0x00 is used as the broadcast address,
+        the slave does not need to reply the master. The address 0xF8
+        is used as the general address, this address can be only used
+        in single-slave environment and can be used for calibration etc.
+
+        Args:
+            addr (int): address of the slave (0x01 ~ 0xF7)
 
         Returns:
-            addr: PZEM Modbus-RTU addres  (Write registry function 0x06)
+            (bool): return true if the address is in the address range
         """
+
+        return not (addr > 0xF8 | addr == 0x00)
+
+    def getAddress(self):
+        """Return the address of the device (seld.addr)
+
+        Returns:
+            (int): the device address
+        """
+
+        return self.addr
+
+    def setAddress(self, addr):
+        """
+        Set the device Modbus-RTU address. The address range of the slave is
+        0x01 ~ 0xF7. The address 0x00 is used as the broadcast address, the
+        slave does not need to reply the master. The address 0xF8 is used as
+        the general address.
+        After the set, update the address value (self.addr).
+
+        1) PZEM Modbus-RTU address holding registry: 0x0002
+
+        Returns:
+            addr (int): PZEM Modbus-RTU address (cmd = 0x06)
+        """
+
         if self.checkAddr(addr):
-            return self.sendCommand(cmd=0x06, regAddr=0x02, opt=addr)
+            return self.sendCommand(cmd=0x06, regAddr=0x02, opt=addr, buf=8)
         else:
             Exception(
-                "(Code: {}) The address must be between 0x01 to 0x0F8. See doc.".format(
+                "(Code: {}) The address must be between 0x01 to 0x0F8. \
+                    See doc.".format(
                     0x01
                 )
             )
 
+    def readAddress(self):
+        """Read device address.
+        After the reading, update the address value (self.addr)
+
+        Returns:
+            (bool): return true if the address value is correctly read & update
+        """
+        return self.sendCommand(cmd=0x03, regAddr=0x02, opt=0x01, buf=7)
+
     def read(self):
-        return self.sendCommand(cmd=0x04, regAddr=0x00, opt=0x0A)
+        """
+        Read the energy values of the PZEM device. This task is performed
+        by reading the measurement result. This function must be call every
+        times before get the PZEM values.[Note 0x0a is represented as
+        \n in a standard Python]
+
+        Returns:
+            (bool): return true if the values are correctly read.
+        """
+        return self.sendCommand(cmd=0x04, regAddr=0x00, opt=0x0A, buf=25)
 
     def resetEnergy(self):
-        return False
+        """Reset energy count.
 
-    def sendCommand(self, cmd, regAddr, opt=None):
+        Returns:
+            (bool): return true if the reset have be done
+        """
+        return self.sendCommand(cmd=0x42, buf=4)
+
+    def setThreshold(self, thr):
+        """Set power allar threshold (cmd = 0x06, holding registry 0x0001,
+        1LSB = 1W). Active power threshold can be set, when the measured
+        active power exceeds the threshold, it can alarm.
+
+        Args:
+            thr (int): power allarm threshold [W] (0x08FC = 2300W)
+
+        Returns:
+            (bool): return true if the threshold setting have be done
+        """
+        return self.sendCommand(cmd=0x06, regAddr=0x01, opt=thr, buf=8)
+
+    def readThreshold(self):
+        """Read the power allarm threshold from the device (holding
+        registry 0x0001, 1LSB = 1W).
+
+        Returns:
+            (int): power allarm threshold [W]
+        """
+        return self.sendCommand(cmd=0x03, regAddr=0x01, opt=0x01, buf=7)
+
+    def getThreshold(self):
+        """Get power allarm threshold
+
+        Returns:
+            (int): power allarm threshold
+        """
+        return self.threshold
+
+    def sendCommand(self, cmd=0x04, regAddr=None, opt=None, buf=25):
         """Send command to PZEM device & wait for the response
 
         Args:
             cmd       (byte): Command to send (0x03, 0x04, 0x06)
-            regAddr   (byte): Start reading register address
-            opt       (byte): Number of register to read or set value for the register
+            regAddr   (byte): Start reading register low byte address
+            opt       (byte): Number of register to read (or the value
+                            for set the register)
+            buf       (int) : Number of byte expected in the reply message
 
         Returns:
-            bool: reding status
+            (bool): reding status
         """
 
-        # Start writing time
-        tStart = start = time.ticks_ms()
+        # Start writing time (ms)
+        tStart = time.ticks_ms()
 
         # Start to build hex string command
         # (> = big endian formst)
         # (B = Unsigned char, 1 byte)
         # (H = Unsigned short, 2 byte)
         # [BBhh = 6 bytes]
-        self.frame = struct.pack(">BBHH", self.addr, cmd, regAddr, opt)
+        if cmd == 0x42:  # Reset the energy cmd
+            self.frame = struct.pack(">BB", self.addr, cmd)
+        else:
+            self.frame = struct.pack(">BBHH", self.addr, cmd, regAddr, opt)
 
-        # Compute the CRC of frame (2 bytes)
+        # Compute the CRC of frame (2 bytes (high & low))
         self.crc16 = self.getCRC16(self.frame)
+        crc_h = self.crc16 >> 8 & 0xFF
+        crc_l = self.crc16 & 0xFF
 
         # Add crc to frame obj
-        self.frame = struct.pack(">BBHHH", self.addr, cmd, regAddr, opt, self.crc16)
+        if cmd == 0x42:
+            self.frame = struct.pack(">BBBB", self.addr, cmd, crc_l, crc_h)
+        else:
+            self.frame = struct.pack(
+                ">BBHHBB", self.addr, cmd, regAddr, opt, crc_l, crc_h
+            )
 
         # Send frame to the UART port
         self.uart.write(self.frame)
         time.sleep(1)
 
-        # Read the response, maximun 25 bytes (25 bytes = (2 * 10 + 1 + 1 + 1 ) + 2 CRC )
-        self.rcvFrame = self.uart.read(25)
+        # Read the response, maximun 25 bytes
+        # (25 bytes = (2 * 10 + 1 + 1 + 1 ) + 2 CRC )
+        self.rcvFrame = self.uart.read(buf)
 
         # Update reading time
-        self.readingTime = time.ticks_us() - tStart
+        self.readingTime = time.ticks_ms() - tStart
 
         frame = list(self.rcvFrame)
-        if self.checkCRC16(frame) & self.checkResponse():
-            if (len(frame) == 25) & frame[2] == 0x14 & self.updateValue(frame):
-                # Read all register
-                return True
-            elif (len(frame) == 8) & frame[1] == 0x06:
-                # Set / reading the address value
-                self.addr = opt
-                return True
-            else:
-                return False
+
+        if (
+            self.checkCRC16(frame)
+            and self.checkResponse(frame)
+            and len(frame) == (buf - 2)
+            and self.updateValue(frame=frame, reg=regAddr)
+        ):
+            return True
         else:
-            Exception(
-                "(Code: {}) Error reply, abnormal code analyzed: {}".format(
-                    0x03, rcv[2]
-                )
-            )
+            # Check the abnormal code in the reply message
+            # self.errorCode = frame[2];
+            return False
 
     def getCRC16(self, frame):
-        crc = self.INITIAL_MODBUS
+        """Compute the cyclic redundancy check (CRC).
 
+        Args:
+            frame (byte): sequence of byte to inclose
+
+        Returns:
+            (int): CRC code (16 bit - 2 byte)
+        """
+        crc = 0xFFFF
         for ch in frame:
             crc = (crc >> 8) ^ self.table[(crc ^ ch) & 0xFF]
         return crc
 
     def checkCRC16(self, frame):
+        """Check the checksum of a received messages
 
-        CRC_low = frame.pop()
+        Args:
+            frame (list if int): list of integer received in the message
+
+        Returns:
+            (bool): return true if the checksum are correct
+        """
         CRC_high = frame.pop()
+        CRC_low = frame.pop()
 
         # Check CRC
         crc = self.getCRC16(frame)
         return (CRC_high << 8 | CRC_low) == crc
 
     def checkResponse(self, frame):
-        return not (frame[1] == 0x84 or frame[1] == 0x86)
+        """Check the message reply
 
-    def updateValue(self, frame):
-        # Unpack 25 bytes
-        # val = struct.unpack("!25B", frame)
+        Args:
+            frame (byte): received message
+
+        Returns:
+            (bool): return true if the message are correct
+        """
+        return not (frame[1] == 0x84 or frame[1] == 0x86 or frame[1] == 0xC2)
+
+    def updateValue(self, frame=frame, reg=None):
+        """Update the measurement result after self.read() function is called.
+
+        Args:
+            frame (list of byte): list of received byte
+
+        Returns:
+            (bool): return true if the values are correctly update
+        """
 
         try:
-            self.Voltage = (frame[3] << 8 | frame[4]) / 10
-            self.Current = (
-                frame[5] << 8 | frame[6] | frame[7] << 24 | frame[8] << 16
-            ) / 1000
-            self.ActivePower = (
-                frame[9] << 8 | frame[10] | frame[11] << 24 | frame[12] << 16
-            ) / 10
-            self.ActiveEnergy = (
-                frame[13] << 8 | frame[14] | frame[15] << 24 | frame[16] << 16
-            ) / 1000
-            self.Frequency = (frame[17] << 8 | frame[18]) / 10
-            self.PowerFactor = (frame[19] << 8 | frame[20]) / 100
-            self.Allarms = frame[21] << 8 | frame[22]
+            # Update the measurement value (input registry, cmd = 0x04)
+            if frame[1] == 0x04:
+
+                self.Voltage = (frame[3] << 8 | frame[4]) / 10
+                self.Current = (
+                    frame[5] << 8 | frame[6] | frame[7] << 24 | frame[8] << 16
+                ) / 1000
+                self.ActivePower = (
+                    frame[9] << 8 | frame[10] | frame[11] << 24 | frame[12] << 16
+                ) / 10
+                self.ActiveEnergy = (
+                    frame[13] << 8 | frame[14] | frame[15] << 24 | frame[16] << 16
+                ) / 1000
+                self.Frequency = (frame[17] << 8 | frame[18]) / 10
+                self.PowerFactor = (frame[19] << 8 | frame[20]) / 100
+                self.Allarms = frame[21] << 8 | frame[22]
+
+            # Read the allarm threshold value
+            # (holding registry = 0x0001, cmd = 0x03)
+            elif frame[1] == 0x03 and reg == 0x01:
+                self.threshold = frame[3] << 8 | frame[4]
+
+            # Read the Modbus-RTU address
+            # (holding registry = 0x0002, cmd = 0x03)
+            elif frame[1] == 0x03 and reg == 0x02:
+                self.addr = frame[4]
+
+            # Update the allarm threshold value
+            # (holding registry 0x0001, cmd = 0x06)
+            elif frame[1] == 0x06 and frame[3] == 0x01:
+                self.threshold = frame[4] << 8 | frame[5]
+
+            # Update allarm threshold value
+            # (holding registry 0x0002, cmd = 0x06)
+            elif frame[1] == 0x06 and frame[3] == 0x02:
+                self.addr = frame[5]
+
         except:
             return False
         else:
             return True
 
     def getReadingTime(self):
+        """Get reading time, the delta time between start and end of
+        the communication.
+
+        Returns:
+            (int): delta time in ms
+        """
         return self.readingTime
 
     def getCurrent(self):
+        """Get the reading current[A]
+
+        Returns:
+            (float): current [A]
+        """
         return self.Current
 
     def getVoltage(self):
+        """Get the reading voltage[W]
+
+        Returns:
+            (float): volatage [V]
+        """
         return self.Voltage
 
     def getActivePower(self):
+        """Get the active power [W]
+
+        Returns:
+            (float): active power [W]
+        """
         return self.ActivePower
 
     def getActiveEnergy(self):
+        """Get the active energy [Wh]
+
+        Returns:
+            (float): active energy [Wh]
+        """
         return self.ActiveEnergy
 
     def getFrequency(self):
+        """Get the frequancy [Hz]
+
+        Returns:
+            (float): frequency [Hz]
+        """
         return self.Frequency
 
     def getPowerFactor(self):
+        """Get the power factor
+
+        Returns:
+            (float): power factor
+        """
         return self.PowerFactor
 
+    def getAllarm(self):
+        """Get the allarm
+
+        Returns:
+            (bool): return true if active power crossed the threshold
+        """
+        return self.Allarms
+
     def toString(self):
-        return """Voltage[V]: {} \t Current[A]: {} \t ActivePower[W]: {} \t 
-      ActiveEnergy[KWh]: {} \t PowerFactor: {} \t Frequency[Hz]: {} \n""".format(
+        """Get string of the reading measurement. This string can be use to
+        save result in a text file.
+
+        Returns:
+            (String): reading measurement
+
+        """
+        return """Voltage[V]: {} \t Current[A]: {} \t ActivePower[W]: {} \t
+      ActiveEnergy[KWh]: {} \t PowerFactor: {} \t Frequency[Hz]: {}
+      \t Allarm: {} \n""".format(
             self.getVoltage(),
             self.getCurrent(),
             self.getActivePower(),
             self.getActiveEnergy(),
             self.getPowerFactor(),
             self.getFrequency(),
+            self.getAllarm(),
         )
 
     # Default ModBus-16 CRC Table
