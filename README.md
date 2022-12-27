@@ -137,6 +137,28 @@ if(dev.setAddress(0x05)):
 ...
 ```
 
+### Example with two devices
+Before continuing, set the address of each device individually (for this purple, see the example before).  This example is done with two devices with 0x05 and 0x06 addresses respectively. 
+
+```py
+# ...
+from pzem import PZEM
+uart = machine.UART(2, baudrate=9600)
+
+# Define home consuptions meter
+home = PZEM(uart=uart,addr=0x05)
+
+# Define solar implant production meter
+solar = PZEM(uart=uart,addr=0x06)
+
+if(home.read() and solar.read()):
+	print(home.toString() + '\n' + solar.toString())
+
+# ...
+```
+
+When the devices will become more than two it's better to define an array of devices and then read each device inside a loop.
+
 ### Set power allarm threshold
 The power alarm threshold is used to check whether the active power has exceeded the set threshold. This is really useful because it could be used to check the peak even when you are not measuring the values (eg if sampling every minute, with this method you can check some peak inside the minute).
 
