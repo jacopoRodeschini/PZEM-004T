@@ -106,7 +106,7 @@ if(dev.setAddress(0x05)):
 ...
 ```
 
-*Using RELP: (to open serial session with a terminal emulator, like Picocol)*
+*Using RELP: (before that, open serial session with a terminal emulator, like Picocom)*
 
 ```py
 >> import PZEM
