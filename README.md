@@ -1,12 +1,13 @@
 # PZEM-004T (v3.0) Microphyton module  
 > Micropython module for the PZEM-004T(v3.0) energy meter 
 
-The PZEM library aims to handle the PZEM-004T (v3.0) energy meter. In particular, read energy values and manage addressing problems. This library is written in micropython to be fully compatible with ESP devices. It communicates using a TTL interface over a [Modbus-RTU](https://en.wikipedia.org/wiki/Modbus) communication protocol and implements the CRC16 checksum. Pay attention that this library works only with the 3.0 version of the PZEM-004T because the old versions use different communication protocols.   
+The PZEM library has been designed to manage the PZEM-004T (v3.0) energy meter. Its main objectives are to facilitate the reading of energy values and to address any related issues. The library has been written in micropython, making it fully compatible with ESP devices. It uses a TTL interface to communicate via the Modbus-RTU communication protocol and implements the CRC16 checksum. It is important to note that this library is only suitable for use with the 3.0 version of the PZEM-004T, as older versions use different communication protocols.
 
-Another important consideration is the voltage level used by the UART channel. PZEM devices only support 5v voltage levels on TX and RX channels. If you use a 3.3v device (like ESP8266) you can upgrade your device to support a 3.3v voltage level with a simple trick, by replacing a single resistor (good documentation for this step can be found at the following link: [hardware connections](https://tasmota.github.io/docs/PZEM-0XX/)).  
-For easy implementation, a basic example of the PZEM class is provided in the [main.py](https://github.com/jacopoRodeschini/PZEM-004T/blob/master/main.py) file (details on this example are explained below). Other examples can be done starting from this basic one. 
+In addition, it is crucial to consider the voltage level used by the UART channel. PZEM devices only support 5v voltage levels on TX and RX channels. If you are using a 3.3v device (such as ESP8266), you can upgrade your device to support a 3.3v voltage level by replacing a single resistor. For instructions on how to do this, refer to the hardware connections documentation available at this link: [hardware connections](https://tasmota.github.io/docs/PZEM-0XX/).
 
-This module works in python, if you need to flash the ESP device (ESP8266 or ESP32) with the micropython firmware, a simple step-by-step guide is available at this [repo](https://github.com/jacopoRodeschini/MicroPython-ESP8266) *(10 min reading)*.
+To simplify the implementation process, a basic example of the PZEM class can be found in the main.py file, which is included in the repository. Details on this example are explained below, and it can be used as a starting point for creating other examples.
+
+It is worth noting that this module works in python, and if you need to flash the ESP device (ESP8266 or ESP32) with the micropython firmware, a step-by-step guide is available at this repository: [repo] (https://github.com/jacopoRodeschini/MicroPython-ESP8266)(which takes approximately 10 minutes to read).
 
 ## Features :star:
 
@@ -18,9 +19,26 @@ This module works in python, if you need to flash the ESP device (ESP8266 or ESP
 - [x] The application layer uses the [Modbus-RTU](https://en.wikipedia.org/wiki/Modbus) protocol to communicate (Possibility to create a PZEM measurement network)
 - [ ] Calibration 
 
+## Connections
+To connect PZEM devices (slaves) with a single master (such as ESP8266 or ESP32), only one UART channel is needed. This is possible because the Modbus protocol supports addressing of the devices, allowing communication with each device by setting its associated address. The general UART connection is as follows:
+
+| PZEM | Master (e.g. ESP32) |
+| --- | --- |
+| 5V | 5V (3.3\*) |
+| RX | TX |
+| TX | RX |
+| GND | GND |
+
+(\*If your master supports only 3.3v, you can upgrade your device to support a 3.3v voltage level by replacing a single resistor, as explained in the previous section.)
+
+To identify the associated pin GPIO on the master board, you need to refer to the pinout of the specific board and search for the device that supports UART connections. Once you have identified the correct pins, you can connect the device accordingly.
+
+If you need to connect more devices, you can put the devices in parallel by sharing the same connection for both data and power. An example with multiple devices is provided below.
+
+
 ## Example :mega:
 
-The PZEM object is simple and includes all methods useful to read the smart meters values. For complete documentation see the methods defined in the PZEM class. The main functions can be summarised in the following examples:  
+The PZEM object is simple and includes all methods useful to read the smart meters values. For complete documentation see the methods defined in the PZEM class. The main functions can be summarised in the following scheme:  
 
 **Remark** 
  - Setting method (e.g. setAddress()): are used to set value in the PZEM device;
