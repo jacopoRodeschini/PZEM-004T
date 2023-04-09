@@ -349,7 +349,7 @@ class PZEM:
                 ) / 10
                 self.ActiveEnergy = (
                     frame[13] << 8 | frame[14] | frame[15] << 24 | frame[16] << 16
-                ) / 1000
+                )
                 self.Frequency = (frame[17] << 8 | frame[18]) / 10
                 self.PowerFactor = (frame[19] << 8 | frame[20]) / 100
                 self.Allarms = frame[21] << 8 | frame[22]
