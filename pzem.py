@@ -453,7 +453,7 @@ class PZEM:
 
         """
         return """Voltage[V]: {} \t Current[A]: {} \t ActivePower[W]: {} \t
-      ActiveEnergy[KWh]: {} \t PowerFactor: {} \t Frequency[Hz]: {}
+      ActiveEnergy[Wh]: {} \t PowerFactor: {} \t Frequency[Hz]: {}
       \t Allarm: {} \n""".format(
             self.getVoltage(),
             self.getCurrent(),
