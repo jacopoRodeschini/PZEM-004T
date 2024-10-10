@@ -266,7 +266,7 @@ class PZEM:
 
         # Read the response, maximun 25 bytes
         # (25 bytes = (2 * 10 + 1 + 1 + 1 ) + 2 CRC )
-        self.rcvFrame = self.uart.read(buf)
+        self.rcvFrame = self.uart.read() or b''
 
         # Update reading time
         self.readingTime = time.ticks_ms() - tStart
@@ -274,9 +274,9 @@ class PZEM:
         frame = list(self.rcvFrame)
 
         if (
-            self.checkCRC16(frame)
+            len(frame) == buf
+            and self.checkCRC16(frame)
             and self.checkResponse(frame)
-            and len(frame) == (buf - 2)
             and self.updateValue(frame=frame, reg=regAddr)
         ):
             return True
